@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+pydantic-settings
+google-genai
+faster-whisper
+python-dotenv
+pytest
+httpx
+requests
