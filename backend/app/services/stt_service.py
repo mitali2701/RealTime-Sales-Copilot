@@ -4,28 +4,21 @@ from faster_whisper import WhisperModel
 
 
 class STTService:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        model_size: str = "base",
+        device: str = "cpu",
+        compute_type: str = "int8",
+    ):
         self.model = WhisperModel(
-            "base",
-            device="cpu",
-            compute_type="int8",
+            model_size,
+            device=device,
+            compute_type=compute_type,
         )
 
-    def transcribe(self, audio_path: str) -> str:
-        path = Path(audio_path)
+    def transcribe(self, audio_path: str | Path) -> str:
+        audio_path = str(audio_path)
 
-        if not path.exists():
-            raise FileNotFoundError(audio_path)
+        segments, _ = self.model.transcribe(audio_path)
 
-        segments, _ = self.model.transcribe(
-            str(path),
-            vad_filter=True,
-        )
-
-        return " ".join(
-            segment.text.strip()
-            for segment in segments
-        ).strip()
-
-
-stt_service = STTService()
+        return " ".join(segment.text.strip() for segment in segments).strip()

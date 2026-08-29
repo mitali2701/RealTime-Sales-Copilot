@@ -1,12 +1,13 @@
-import os
+from pathlib import Path
 import tempfile
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
-from app.services.transcription_service import transcription_service
-
+from app.services.stt_service import STTService
 
 router = APIRouter()
+
+stt_service = STTService()
 
 
 @router.post("/transcribe")
@@ -17,7 +18,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
             detail="Audio file is required",
         )
 
-    suffix = os.path.splitext(file.filename)[1] or ".wav"
+    suffix = Path(file.filename).suffix or ".wav"
 
     try:
         with tempfile.NamedTemporaryFile(
@@ -27,11 +28,13 @@ async def transcribe_audio(file: UploadFile = File(...)):
             temp_file.write(await file.read())
             temp_path = temp_file.name
 
-        result = transcription_service.transcribe(temp_path)
+        transcript = stt_service.transcribe(temp_path)
 
         return {
             "success": True,
-            "transcription": result,
+            "data": {
+                "transcript": transcript,
+            },
         }
 
     except Exception as exc:
@@ -41,5 +44,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
         ) from exc
 
     finally:
-        if "temp_path" in locals() and os.path.exists(temp_path):
-            os.remove(temp_path)
+        try:
+            Path(temp_path).unlink(missing_ok=True)
+        except UnboundLocalError:
+            pass
