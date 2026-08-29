@@ -15,16 +15,23 @@ class AnalyzeRequest(BaseModel):
 async def analyze_sales_conversation(request: AnalyzeRequest):
     if not request.transcript.strip():
         raise HTTPException(
-            status_code=400,
+            status_code=422,
             detail="Transcript cannot be empty",
         )
 
     try:
         result = generate_completion(request.transcript)
 
+        if hasattr(result, "model_dump"):
+            data = result.model_dump()
+        elif isinstance(result, dict):
+            data = result
+        else:
+            data = {"result": result}
+
         return {
             "success": True,
-            "analysis": result.model_dump(),
+            "data": data,
         }
 
     except RuntimeError as exc:
