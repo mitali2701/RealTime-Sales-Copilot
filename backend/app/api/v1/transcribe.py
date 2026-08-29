@@ -1,9 +1,9 @@
+import os
 import tempfile
-from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
-from app.services.stt_service import stt_service
+from app.services.transcription_service import transcription_service
 
 
 router = APIRouter()
@@ -11,47 +11,35 @@ router = APIRouter()
 
 @router.post("/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
-    allowed_types = {
-        "audio/wav",
-        "audio/x-wav",
-        "audio/mpeg",
-        "audio/mp3",
-        "audio/mp4",
-        "audio/webm",
-        "audio/ogg",
-    }
-
-    if file.content_type not in allowed_types:
+    if not file.filename:
         raise HTTPException(
             status_code=400,
-            detail="Unsupported audio format",
+            detail="Audio file is required",
         )
 
-    data = await file.read()
-
-    if len(data) > 25 * 1024 * 1024:
-        raise HTTPException(
-            status_code=413,
-            detail="Audio file is too large",
-        )
-
-    suffix = Path(file.filename or "audio.wav").suffix or ".wav"
-
-    with tempfile.NamedTemporaryFile(
-        suffix=suffix,
-        delete=False,
-    ) as temp:
-        temp.write(data)
-        temp_path = temp.name
+    suffix = os.path.splitext(file.filename)[1] or ".wav"
 
     try:
-        transcript = stt_service.transcribe(temp_path)
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=suffix,
+        ) as temp_file:
+            temp_file.write(await file.read())
+            temp_path = temp_file.name
+
+        result = transcription_service.transcribe(temp_path)
 
         return {
             "success": True,
-            "transcript": transcript,
-            "filename": file.filename,
+            "transcription": result,
         }
 
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Transcription failed: {exc}",
+        ) from exc
+
     finally:
-        Path(temp_path).unlink(missing_ok=True)
+        if "temp_path" in locals() and os.path.exists(temp_path):
+            os.remove(temp_path)

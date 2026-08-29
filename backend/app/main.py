@@ -17,12 +17,12 @@ app.include_router(
 )
 
 app.include_router(
-    transcribe_router,
+    analyze_router,
     prefix="/api/v1",
 )
 
 app.include_router(
-    analyze_router,
+    transcribe_router,
     prefix="/api/v1",
 )
 
