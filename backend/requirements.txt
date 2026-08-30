@@ -9,3 +9,6 @@ python-dotenv
 pytest
 httpx
 requests
+redis
+
+pyannote.audio

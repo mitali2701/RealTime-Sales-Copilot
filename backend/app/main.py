@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.api.v1.transcribe import router as transcribe_router
 from app.api.v1.analyze import router as analyze_router
 from app.api.v1.analyze_audio import router as analyze_audio_router
+from app.api.v1.websocket import router as websocket_router
 
 app = FastAPI(
     title="SalesAI API",
@@ -22,6 +23,11 @@ app.include_router(
 
 app.include_router(
     analyze_audio_router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    websocket_router,
     prefix="/api/v1",
 )
 
